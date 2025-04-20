@@ -1,0 +1,280 @@
+module pupremote
+author unknown
+version 1 0 
+description ''
+variables _commands tmp _nr_modes data _cur_mode count _last_nack _connected _pup_senddata _pup_payloads 
+
+  spec ' ' 'add_command' 'add_command _ to_hub _ from_hub _ type _' 'auto auto auto auto' '10' '10' 10 '10'
+  spec 'r' 'hextolist' 'hextolist _' 'auto' '10'
+  spec ' ' 'init_sensor' 'init_sensor'
+  spec ' ' 'initmode' 'initmode _' 'auto' '10'
+  spec ' ' 'sendatachk' 'sendatachk _' 'auto' '10'
+  spec ' ' 'sendhex' 'sendhex _' 'auto' '10'
+  spec 'r' '_calc_len_data' '_calc_len_data _ _ _' 'auto auto auto' '10' '10' '10'
+  spec 'r' '_get_type' '_get_type _' 'auto' '10'
+  spec 'r' '_log_len' '_log_len _' 'auto' '10'
+  spec 'r' 'heartbeat' 'heartbeat'
+  spec 'r' 'log2' 'log2 _' 'auto' '10'
+  spec ' ' 'reset' 'reset'
+  spec ' ' 'send_data' 'send_data _' 'auto' '10'
+  spec ' ' 'process' 'process'
+  spec ' ' 'set_payload' 'set_payload _ _' 'auto auto' '10' '10'
+  spec ' ' 'init' 'init'
+  spec ' ' 'reset_nack' 'reset_nack'
+
+to '_calc_len_data' data_type to_hub from_hub {
+  return ('_log_len' ((1 << data_type) * (maximum to_hub from_hub)))
+}
+
+to '_get_type' type {
+  local 'data_type' 0
+  if (type == 'i') {
+    data_type = 2
+  } (type == 'w') {
+    data_type = 1
+  } else {
+    data_type = 0
+  }
+  return data_type
+}
+
+to '_log_len' len {
+  local 'loglen' 0
+  if (len > 16) {
+    return 5
+  } (len > 8) {
+    return 4
+  } (len > 4) {
+    return 3
+  } (len > 2) {
+    return 2
+  } (len > 1) {
+    return 1
+  } else {
+    return 0
+  }
+}
+
+to add_command cmd to_hub from_hub type {
+  comment 'type is dropdown ''B'', ''W'', ''L'' for byte, 16-bit word, 32-bit int'
+  local 'data_type' ('_get_type' type)
+  local 'new_command' ('[data:makeList]' cmd to_hub from_hub data_type ('_calc_len_data' data_type to_hub from_hub))
+  if ((size _commands) == 0) {
+    _commands = ('[data:makeList]' new_command)
+  } else {
+    '[data:addLast]' new_command _commands
+  }
+  _nr_modes = (size _commands)
+  '[data:addLast]' (newList 32) _pup_payloads
+}
+
+to heartbeat {
+  if ((('[serial:millis]') - _last_nack) > 4000) {reset}
+  if (('[serial:available]') > 0) {
+    graphIt (('[serial:millis]') - _last_nack) ''
+    local 'cmd' (at 1 ('[serial:readNr]' 1))
+    if (cmd == 2) {
+      _last_nack = ('[serial:millis]')
+      sendatachk ('[data:makeList]' ((hexToInt '46') | 0) 0)
+    } (cmd == (hexToInt '46')) {
+      _last_nack = ('[serial:millis]')
+      local 'ser_data' ('[serial:read]')
+      comment 'mode = (b & 0b111)'
+      local 'wrtmode' ((at 3 ser_data) & 7)
+      _cur_mode = wrtmode
+      comment ' len = 2 ** ((b & 0b111000) >> 3)'
+      local 'lenpow2' (((at 3 ser_data) & 56) >> 3)
+      local 'len' (1 << lenpow2)
+      local 'list' ('[data:makeList]')
+      for i len {
+        '[data:addLast]' (at (i + 3) ser_data) list
+      }
+      graphIt (('[serial:millis]') - _last_nack) (at (i + 3) ser_data) ''
+      return ('[data:makeList]' wrtmode list)
+    } (cmd == (hexToInt '43')) {
+      _last_nack = ('[serial:millis]')
+      local 'ser_data' ('[serial:read]')
+      _cur_mode = (at 1 ser_data)
+      sayIt 'mode' _cur_mode
+      waitMillis 5
+      send_data _cur_mode
+    }
+  }
+}
+
+to hextolist hexstr {
+  local 'len' ((size hexstr) / 2)
+  local 'data' (newList len)
+  for i len {
+    atPut i data (hexToInt ('[data:copyFromTo]' hexstr ((i * 2) - 1) (i * 2)))
+  }
+  return data
+}
+
+to init {
+  comment 'Initialize global variables'
+  _commands = ('[data:makeList]')
+  _cur_mode = 0
+  _pup_senddata = (newList 32)
+  _pup_payloads = ('[data:makeList]')
+  _last_nack = ('[serial:millis]')
+}
+
+to init_sensor {
+  sendhex 0
+  comment 'TYPE_ID'
+  sendhex '403e81'
+  comment 'CMD_MODES 0x49 <nr_modes> <nr_views>'
+  sendatachk ('[data:makeList]' (hexToInt '49') (_nr_modes - 1) (_nr_modes - 1))
+  comment 'set baud rate to 115200'
+  sendhex '5200c201006e'
+  comment 'CMD_VERSION'
+  sendhex '5f0000000100000105a5'
+  for i _nr_modes {
+    initmode ((_nr_modes + 0) - i)
+  }
+}
+
+to initmode mode {
+  local 'cur_command' (at (mode + 1) _commands)
+  local 'data_type' (at 4 cur_command)
+  comment 'INFO mode + power'
+  local 'list' ('[data:join]' ('[data:makeList]' ((hexToInt 'a0') | mode)) (hextolist ('[data:toString]' '00646174')) ('[data:makeList]' (hexToInt '30') (48 + mode)) (hextolist ('[data:toString]' '0080000000050400000000')))
+  waitMillis 20
+  sendatachk list
+  comment 'INFO RAW, PCT, SI'
+  for i 3 {
+    local 'list' ('[data:join]' ('[data:makeList]' ((hexToInt '98') | mode) i) (hextolist ('[data:toString]' '000000000000c842')))
+    sendatachk list
+    waitMillis 20
+  }
+  waitMillis 10
+  comment 'INFO UNITS = empty len 0'
+  local 'list' ('[data:makeList]' ((hexToInt '80') | mode) 4 0)
+  sendatachk list
+  comment 'info mapping: 0x88|mode 0x05 input=(abs)0x10 output=(abs)0x10'
+  local 'list' ('[data:makeList]' ((hexToInt '88') | mode) 5 (hexToInt '10') (hexToInt '10'))
+  sendatachk list
+  comment '0x90|mode 0x80 <data_type> <log2(len)> <digits> <decimals>'
+  local 'max_len' (maximum (at 2 cur_command) (at 3 cur_command))
+  local 'list' ('[data:makeList]' ((hexToInt '90') | mode) (hexToInt '80') max_len (at 4 cur_command) 3 0)
+  sendatachk list
+}
+
+to log2 len {
+  if (len == 1) {
+    return 0
+  } (len == 2) {
+    return 1
+  } (len == 4) {
+    return 2
+  } (len == 8) {
+    return 3
+  } (len == 16) {
+    return 4
+  } (len == 32) {
+    return 5
+  } else {
+    return 0
+  }
+}
+
+to process {
+  local 'local_data' (heartbeat)
+  local 'data_from_hub' (booleanConstant false)
+  if ((size local_data) > 0) {
+    comment 'arguments passed'
+    data_from_hub = (booleanConstant true)
+    local 'mode' (at 1 local_data)
+    local 'payload' (at 2 local_data)
+  } else {
+    local 'mode' _cur_mode
+    local 'payload' ('[data:makeList]')
+  }
+  local 'function_name' (at 1 (at (mode + 1) _commands))
+  local 'has_return' ((at 2 (at (mode + 1) _commands)) > 0)
+  local 'has_arg' ((at 3 (at (mode + 1) _commands)) > 0)
+  if (and (not has_arg) has_return) {
+    set_payload mode (callCustomReporter function_name payload)
+  } (and has_arg (and has_return data_from_hub)) {
+    set_payload mode (callCustomReporter function_name payload)
+  } (and has_arg (and (not has_return) data_from_hub)) {
+    callCustomCommand function_name payload
+  } else {
+  }
+  send_data _cur_mode
+}
+
+to reset {
+  '[serial:close]'
+  _last_nack = ('[serial:millis]')
+  _cur_mode = 0
+  _connected = 0
+  local 'tmp_var' 0
+  if (('[serial:espversion]') == 2) {
+    tmp_var = (digitalReadOp 8)
+    digitalWriteOp 7 true
+    waitMillis 50
+    digitalWriteOp 7 false
+  } else {
+    '[serial:close]'
+    tmp_var = (digitalReadOp 18)
+    digitalWriteOp 19 true
+    waitMillis 50
+    digitalWriteOp 19 false
+  }
+  waitMillis 450
+  '[serial:open]' 2400
+  init_sensor
+  sendhex 4
+  '[serial:open]' 115200
+  waitMillis 10
+  sendhex 'c0003f'
+  _connected = 1
+  '[serial:open]' 115200
+}
+
+to reset_nack {
+  _last_nack = ('[serial:millis]')
+}
+
+to send_data mode {
+  if (_connected == 1) {
+    local 'payload' (at (mode + 1) _pup_payloads)
+    local 'loglen' (at 5 (at (mode + 1) _commands))
+    local 'list' ('[data:makeList]' (((hexToInt 'c0') | (loglen << 3)) | mode))
+    for i (1 << loglen) {
+      '[data:addLast]' (at i payload) list
+    }
+    sendatachk list
+  }
+}
+
+to sendatachk data {
+  local 'chk' 255
+  for i (size data) {
+    chk = (chk ^ (at i data))
+  }
+  '[data:addLast]' chk data
+  '[serial:write]' data
+}
+
+to sendhex hexstr {
+  if (isType hexstr 'number') {
+    local 'data' (newList 1)
+    atPut 1 data hexstr
+  } else {
+    local 'len' ((size hexstr) / 2)
+    local 'data' (newList len)
+    for i len {
+      atPut i data (hexToInt ('[data:copyFromTo]' hexstr ((i * 2) - 1) (i * 2)))
+    }
+  }
+  '[serial:write]' data
+  waitMillis 1
+}
+
+to set_payload mode payload {
+  atPut (mode + 1) _pup_payloads payload
+}
+

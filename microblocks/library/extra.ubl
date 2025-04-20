@@ -1,0 +1,10 @@
+module extra
+author Ste7an
+version 1 0 
+description 'Extra system functions for Serialcommunication and ESP32 version'
+
+
+  spec 'r' '[serial:readNr]' 'serial read _ bytes' 'num' '10'
+  spec 'r' '[serial:available]' 'serial available' 
+  spec 'r' '[serial:espversion]' 'get esp version' 
+  spec 'r' '[serial:millis]' 'millis' 

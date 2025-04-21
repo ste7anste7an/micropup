@@ -1,0 +1,653 @@
+module main
+author unknown
+version 1 0 
+description ''
+variables count 
+
+  spec 'r' '_calc_len_data' '_calc_len_data _ _ _' 'auto auto auto' '10' '10' '10'
+  spec 'r' '_get_type' '_get_type _' 'auto' '10'
+  spec 'r' '_log_len' '_log_len _' 'auto' '10'
+  spec ' ' 'add_command' 'add_command _ to_hub _ from_hub _ type _' 'str auto auto str.data_type' '' '1' '1' 'B'
+  spec 'r' 'kat' 'kat _ _ _ _ _ _ _ _' 'auto auto auto auto auto auto auto auto' '10' '10' '10' '10' '10' '10' '10' '10'
+  spec ' ' 'process' 'process'
+  spec 'r' 'aap' 'aap _' 'auto' '10'
+  spec ' ' 'muis' 'muis _ _ _' 'auto auto auto' '10' '10' '10'
+  spec ' ' 'time' 'time'
+
+to aap a {
+  return ('[data:makeList]' (a * 2))
+}
+
+to kat foo bar baz quux garply spam frob corge {
+  return ('[data:makeList]' corge frob spam garply quux baz bar foo)
+}
+
+to muis foo bar baz {
+  graphIt foo bar baz
+}
+
+to time {
+  return ('[data:makeList]' ('[serial:millis]'))
+}
+
+script 912 69 {
+to aap {}
+}
+
+script 330 169 {
+whenStarted
+count = 0
+neoPixelAttach 1 25
+init
+add_command 'aap' 1 1 'W'
+add_command 'kat' 8 8 'B'
+add_command 'muis' 0 3 'W'
+add_command 'time' 1 0 'I'
+forever {
+  count = ((count + 1) % 100)
+  process
+  waitMillis 20
+}
+}
+
+script 917 208 {
+to kat {}
+}
+
+script 914 399 {
+to muis {}
+}
+
+script 918 526 {
+to time {}
+}
+
+
+module NeoPixel Output
+author MicroBlocks
+version 1 11 
+description 'Control NeoPixel (WS2812) RGB LED strips and rings.
+'
+variables _np_pixels 
+
+  spec ' ' 'neoPixelAttach' 'attach _ LED NeoPixel strip to pin _ : has white _' 'num auto bool' 10 '' false
+  spec ' ' 'setNeoPixelColors10' 'set NeoPixels _ _ _ _ _ _ _ _ _ _' 'color color color color color color color color color color'
+  spec ' ' 'clearNeoPixels' 'clear NeoPixels'
+  spec ' ' 'neoPixelSetAllToColor' 'set all NeoPixels color _' 'color'
+  spec ' ' 'setNeoPixelColor' 'set NeoPixel _ color _' 'num color' 1
+  space
+  spec 'r' 'neoPixel_colorSwatch' '_' 'color'
+  spec 'r' 'colorFromRGB' 'color r _ g _ b _ (0-255)' 'num num num' 0 100 100
+  spec 'r' 'randomColor' 'random color'
+  space
+  spec ' ' 'rotateNeoPixelsBy' 'rotate NeoPixels by _' 'auto' 1
+  space
+  spec ' ' 'NeoPixel_brighten' 'brighten NeoPixel _ by _' 'num num' 1 10
+  spec ' ' 'NeoPixel_brighten_all' 'brighten all NeoPixels by _' 'num' 10
+  spec ' ' 'NeoPixel_shift_color' 'shift NeoPixel _ color by _' 'num num' 1 10
+  spec ' ' 'NeoPixel_shift_all_colors' 'shift all NeoPixel colors by _' 'num' 10
+  space
+  spec ' ' '_NeoPixel_ensureInitialized' '_NeoPixel_ensureInitialized'
+  spec ' ' '_NeoPixel_increaseRGB' '_NeoPixel_increaseRGB of _ by _' 'num num' 1 10
+  spec ' ' '_NeoPixel_rotate' '_NeoPixel_rotate_left _' 'bool' true
+  spec ' ' '_NeoPixel_update' '_NeoPixel_update'
+  spec ' ' '_NeoPixel_shift_hue' '_NeoPixel_shift_hue of _ by _' 'auto auto' '10' '10'
+
+to NeoPixel_brighten i delta {
+  '_NeoPixel_increaseRGB' i delta
+  '_NeoPixel_update'
+}
+
+to NeoPixel_brighten_all delta {
+  for i (size _np_pixels) {
+    '_NeoPixel_increaseRGB' i delta
+  }
+  '_NeoPixel_update'
+}
+
+to NeoPixel_shift_all_colors delta {
+  for i (size _np_pixels) {
+    '_NeoPixel_shift_hue' i delta
+  }
+  '_NeoPixel_update'
+}
+
+to NeoPixel_shift_color i delta {
+  '_NeoPixel_shift_hue' i delta
+  '_NeoPixel_update'
+}
+
+to '_NeoPixel_ensureInitialized' {
+  if (_np_pixels == 0) {if (or ((boardType) == 'M5Atom-Matrix') (or ((boardType) == 'Mbits') ((boardType) == 'micro:STEAMakers'))) {
+    neoPixelAttach 25 '' false
+  } ((boardType) == 'D1-Mini') {
+    comment 'D1 mini kit'
+    neoPixelAttach 7 15 false
+  } else {
+    neoPixelAttach 10 '' false
+  }}
+}
+
+to '_NeoPixel_increaseRGB' i delta {
+  if (or (i < 1) (i > (size _np_pixels))) {return}
+  local 'rgb' (at i _np_pixels)
+  if (rgb != 0) {
+    local 'h' ('[misc:hue]' rgb)
+    local 's' ('[misc:saturation]' rgb)
+    local 'v' (('[misc:brightness]' rgb) + delta)
+    v = (maximum 20 (minimum v 100))
+    atPut i _np_pixels ('[misc:hsvColor]' h s v)
+  }
+}
+
+to '_NeoPixel_rotate' left {
+  '_NeoPixel_ensureInitialized'
+  local 'length' (size _np_pixels)
+  if left {
+    local 'first' (at 1 _np_pixels)
+    for i (length - 1) {
+      atPut i _np_pixels (at (i + 1) _np_pixels)
+    }
+    atPut length _np_pixels first
+  } else {
+    local 'last' (at length _np_pixels)
+    for i (length - 1) {
+      atPut ((length - i) + 1) _np_pixels (at (length - i) _np_pixels)
+    }
+    atPut 1 _np_pixels last
+  }
+}
+
+to '_NeoPixel_shift_hue' i delta {
+  if (or (i < 1) (i > (size _np_pixels))) {return}
+  local 'rgb' (at i _np_pixels)
+  if (rgb != 0) {
+    local 'h' ((('[misc:hue]' rgb) + delta) % 360)
+    local 's' ('[misc:saturation]' rgb)
+    local 'v' ('[misc:brightness]' rgb)
+    atPut i _np_pixels ('[misc:hsvColor]' h s v)
+  }
+}
+
+to '_NeoPixel_update' {
+  '[display:neoPixelSend]' _np_pixels
+  waitMicros 300
+}
+
+to clearNeoPixels {
+  '_NeoPixel_ensureInitialized'
+  atPut 'all' _np_pixels 0
+  '_NeoPixel_update'
+}
+
+to colorFromRGB r g b {
+  r = (maximum 0 (minimum r 255))
+  g = (maximum 0 (minimum g 255))
+  b = (maximum 0 (minimum b 255))
+  return (((r << 16) | (g << 8)) | b)
+}
+
+to neoPixelAttach number pinNumber optionalHasWhite {
+  hasWhite = false
+  if ((pushArgCount) > 2) {
+    hasWhite = optionalHasWhite
+  }
+  if (or (_np_pixels == 0) (number != (size _np_pixels))) {
+    _np_pixels = (newList number)
+  }
+  atPut 'all' _np_pixels 0
+  '[display:neoPixelSetPin]' pinNumber hasWhite
+}
+
+to neoPixelSetAllToColor color {
+  '_NeoPixel_ensureInitialized'
+  atPut 'all' _np_pixels color
+  '_NeoPixel_update'
+}
+
+to neoPixel_colorSwatch color {
+  return color
+}
+
+to randomColor {
+  local 'n1' (random 100 200)
+  local 'n2' (random 0 100)
+  if (1 == (random 1 3)) {
+    return ((n1 << 16) | (n2 << 8))
+  } (1 == (random 1 2)) {
+    return ((n2 << 16) | n1)
+  } else {
+    return ((n1 << 8) | n2)
+  }
+}
+
+to rotateNeoPixelsBy n {
+  '_NeoPixel_ensureInitialized'
+  repeat (absoluteValue n) {
+    '_NeoPixel_rotate' (n > 0)
+  }
+  '_NeoPixel_update'
+}
+
+to setNeoPixelColor i color {
+  '_NeoPixel_ensureInitialized'
+  if (and (1 <= i) (i <= (size _np_pixels))) {
+    atPut i _np_pixels color
+    '_NeoPixel_update'
+  }
+}
+
+to setNeoPixelColors10 c1 c2 c3 c4 c5 c6 c7 c8 c9 c10 {
+  '_NeoPixel_ensureInitialized'
+  if ((size _np_pixels) >= 1) {
+    atPut 1 _np_pixels c1
+  }
+  if ((size _np_pixels) >= 2) {
+    atPut 2 _np_pixels c2
+  }
+  if ((size _np_pixels) >= 3) {
+    atPut 3 _np_pixels c3
+  }
+  if ((size _np_pixels) >= 4) {
+    atPut 4 _np_pixels c4
+  }
+  if ((size _np_pixels) >= 5) {
+    atPut 5 _np_pixels c5
+  }
+  if ((size _np_pixels) >= 6) {
+    atPut 6 _np_pixels c6
+  }
+  if ((size _np_pixels) >= 7) {
+    atPut 7 _np_pixels c7
+  }
+  if ((size _np_pixels) >= 8) {
+    atPut 8 _np_pixels c8
+  }
+  if ((size _np_pixels) >= 9) {
+    atPut 9 _np_pixels c9
+  }
+  if ((size _np_pixels) >= 10) {
+    atPut 10 _np_pixels c10
+  }
+  '_NeoPixel_update'
+}
+
+
+module pupremote
+author unknown
+version 1 0 
+choices data_type B W I 
+description ''
+variables _pup_commands tmp _pup_nr_modes _pup_cur_mode _pup_last_nack _pup_connected _pup_senddata _pup_payloads 
+
+  spec ' ' 'init' 'init'
+  spec ' ' 'add_command' 'add_command _ to_hub _ from_hub _ type _' 'str auto auto str.data_type' '' '1' '1' 'B'
+  spec ' ' 'process' 'process'
+  spec ' ' 'reset_nack' 'reset_nack'
+  spec 'r' '_tohex' '_tohex _' 'auto' '10'
+  spec 'r' '_bytestowords' '_bytestowords _' 'auto' '10'
+  spec 'r' '_bytetoword' '_bytetoword _' 'auto' '10'
+  spec 'r' '_wordstobytes' '_wordstobytes _' 'auto' '10'
+  spec 'r' '_wordtobyte' '_wordtobyte _' 'auto' '10'
+  spec 'r' '_longtobyte' '_longtobyte _' 'auto' '10'
+  spec 'r' '_bytestolongs' '_bytestolongs _' 'auto' '10'
+  spec 'r' '_bytetolong' '_bytetolong _' 'auto' '10'
+  spec 'r' '_longstobytes' '_longstobytes _' 'auto' '10'
+  spec 'r' '_make_payload' '_make_payload _ _ _' 'auto auto auto' '10' '10' '10'
+  spec 'r' '_hextolist' '_hextolist _' 'auto' '10'
+  spec 'r' '_heartbeat' '_heartbeat'
+  spec ' ' '_init_sensor' '_init_sensor'
+  spec ' ' '_initmode' '_initmode _' 'auto' '10'
+  spec ' ' '_sendatachk' '_sendatachk _' 'auto' '10'
+  spec ' ' '_sendhex' '_sendhex _' 'auto' '10'
+  spec 'r' '_calc_len_data' '_calc_len_data _ _ _' 'auto auto auto' '10' '10' '10'
+  spec 'r' '_get_type' '_get_type _' 'auto' '10'
+  spec 'r' '_log_len' '_log_len _' 'auto' '10'
+  spec 'r' '_log2' '_log2 _' 'auto' '10'
+  spec ' ' '_reset' '_reset'
+  spec ' ' '_send_data' '_send_data _' 'auto' '10'
+  spec ' ' '_set_payload' '_set_payload _ _' 'auto auto' '10' '10'
+
+to '_bytestolongs' bytes {
+  local 'longs' ('[data:makeList]')
+  for i ((size bytes) / 4) {
+    local 'cnt' ((i * 4) - 3)
+    '[data:addLast]' ('_bytetolong' ('[data:makeList]' (at (cnt - 0) bytes) (at (cnt + 1) bytes) (at (cnt + 2) bytes) (at (cnt + 3) bytes))) longs
+  }
+  return longs
+}
+
+to '_bytestowords' bytes {
+  local 'words' ('[data:makeList]')
+  for i ((size bytes) / 2) {
+    local 'cnt' (i * 2)
+    '[data:addLast]' ('_bytetoword' ('[data:makeList]' (at (cnt - 1) bytes) (at (cnt + 0) bytes))) words
+  }
+  return words
+}
+
+to '_bytetolong' bytes {
+  return ((((at 1 bytes) + ((at 2 bytes) << 8)) + ((at 3 bytes) << 16)) + ((at 4 bytes) << 24))
+}
+
+to '_bytetoword' bytes {
+  return ((at 1 bytes) + ((at 2 bytes) << 8))
+}
+
+to '_calc_len_data' data_type to_hub from_hub {
+  return ('_log_len' ((1 << data_type) * (maximum to_hub from_hub)))
+}
+
+to '_get_type' type {
+  local 'data_type' 0
+  if (type == 'I') {
+    data_type = 2
+  } (type == 'W') {
+    data_type = 1
+  } else {
+    data_type = 0
+  }
+  return data_type
+}
+
+to '_heartbeat' {
+  if ((('[serial:millis]') - _pup_last_nack) > 4000) {'_reset'}
+  if (('[serial:available]') > 0) {
+    local 'cmd' (at 1 ('[serial:readNr]' 1))
+    if (cmd == 2) {
+      _pup_last_nack = ('[serial:millis]')
+      '_sendatachk' ('[data:makeList]' ((hexToInt '46') | 0) 0)
+    } (cmd == (hexToInt '46')) {
+      _pup_last_nack = ('[serial:millis]')
+      local 'ser_data' ('[serial:read]')
+      comment 'mode = (b & 0b111)'
+      local 'wrtmode' ((at 3 ser_data) & 7)
+      _pup_cur_mode = wrtmode
+      comment ' len = 2 ** ((b & 0b111000) >> 3)'
+      local 'lenpow2' (((at 3 ser_data) & 56) >> 3)
+      local 'len' (1 << lenpow2)
+      local 'list' ('[data:makeList]')
+      for i len {
+        '[data:addLast]' (at (i + 3) ser_data) list
+      }
+      return ('[data:makeList]' wrtmode list)
+    } (cmd == (hexToInt '43')) {
+      _pup_last_nack = ('[serial:millis]')
+      local 'ser_data' ('[serial:read]')
+      _pup_cur_mode = (at 1 ser_data)
+      waitMillis 5
+      '_send_data' _pup_cur_mode
+    }
+  }
+}
+
+to '_hextolist' hexstr {
+  local 'len' ((size hexstr) / 2)
+  local 'data' (newList len)
+  for i len {
+    atPut i data (hexToInt ('[data:copyFromTo]' hexstr ((i * 2) - 1) (i * 2)))
+  }
+  return data
+}
+
+to '_init_sensor' {
+  '_sendhex' 0
+  comment 'TYPE_ID'
+  '_sendhex' '403e81'
+  comment 'CMD_MODES 0x49 <nr_modes> <nr_views>'
+  '_sendatachk' ('[data:makeList]' (hexToInt '49') (_pup_nr_modes - 1) (_pup_nr_modes - 1))
+  comment 'set baud rate to 115200'
+  '_sendhex' '5200c201006e'
+  comment 'CMD_VERSION'
+  '_sendhex' '5f0000000100000105a5'
+  for i _pup_nr_modes {
+    '_initmode' ((_pup_nr_modes + 0) - i)
+  }
+}
+
+to '_initmode' mode {
+  local 'cur_command' (at (mode + 1) _pup_commands)
+  local 'data_type' (at 4 cur_command)
+  comment 'INFO mode + power'
+  local 'list' ('[data:join]' ('[data:makeList]' ((hexToInt 'a0') | mode)) ('_hextolist' ('[data:toString]' '00646174')) ('[data:makeList]' (hexToInt '30') (48 + mode)) ('_hextolist' ('[data:toString]' '0080000000050400000000')))
+  waitMillis 20
+  '_sendatachk' list
+  comment 'INFO RAW, PCT, SI'
+  for i 3 {
+    local 'list' ('[data:join]' ('[data:makeList]' ((hexToInt '98') | mode) i) ('_hextolist' ('[data:toString]' '000000000000c842')))
+    '_sendatachk' list
+    waitMillis 20
+  }
+  waitMillis 10
+  comment 'INFO UNITS = empty len 0'
+  local 'list' ('[data:makeList]' ((hexToInt '80') | mode) 4 0)
+  '_sendatachk' list
+  comment 'info mapping: 0x88|mode 0x05 input=(abs)0x10 output=(abs)0x10'
+  local 'list' ('[data:makeList]' ((hexToInt '88') | mode) 5 (hexToInt '10') (hexToInt '10'))
+  '_sendatachk' list
+  comment '0x90|mode 0x80 <data_type> <log2(len)> <digits> <decimals>'
+  local 'max_len' (maximum (at 2 cur_command) (at 3 cur_command))
+  local 'list' ('[data:makeList]' ((hexToInt '90') | mode) (hexToInt '80') max_len (at 4 cur_command) 3 0)
+  '_sendatachk' list
+}
+
+to '_log2' len {
+  if (len == 1) {
+    return 0
+  } (len == 2) {
+    return 1
+  } (len == 4) {
+    return 2
+  } (len == 8) {
+    return 3
+  } (len == 16) {
+    return 4
+  } (len == 32) {
+    return 5
+  } else {
+    return 0
+  }
+}
+
+to '_log_len' len {
+  local 'loglen' 0
+  if (len > 16) {
+    return 5
+  } (len > 8) {
+    return 4
+  } (len > 4) {
+    return 3
+  } (len > 2) {
+    return 2
+  } (len > 1) {
+    return 1
+  } else {
+    return 0
+  }
+}
+
+to '_longstobytes' longs {
+  local 'bytes' ('[data:makeList]')
+  for i (size longs) {
+    bytes = ('[data:join]' bytes ('_longtobyte' (at i longs)))
+  }
+  return bytes
+}
+
+to '_longtobyte' long {
+  local 'bytes' ('[data:makeList]' (long & 255) ((long >> 8) & 255) ((long >> 16) & 255) ((long >> 24) & 255))
+  return bytes
+}
+
+to '_make_payload' payload data_type tot_len {
+  if (data_type == 0) {
+    local 'raw_bytes' payload
+  } (data_type == 1) {
+    local 'raw_bytes' ('_wordstobytes' payload)
+  } (data_type == 2) {
+    local 'raw_bytes' ('_longstobytes' payload)
+  } else {
+  }
+  comment 'extend raw_bytes to 1>>loglen'
+  local 'pad_len' ((1 << tot_len) - (size raw_bytes))
+  if (pad_len > 0) {
+    return ('[data:join]' raw_bytes (newList pad_len))
+  } else {
+    return raw_bytes
+  }
+}
+
+to '_reset' {
+  '[serial:close]'
+  _pup_last_nack = ('[serial:millis]')
+  _pup_cur_mode = 0
+  _pup_connected = 0
+  local 'tmp_var' 0
+  if (('[serial:espversion]') == 2) {
+    tmp_var = (digitalReadOp 8)
+    digitalWriteOp 7 true
+    waitMillis 50
+    digitalWriteOp 7 false
+  } else {
+    '[serial:close]'
+    tmp_var = (digitalReadOp 18)
+    digitalWriteOp 19 true
+    waitMillis 50
+    digitalWriteOp 19 false
+  }
+  waitMillis 450
+  '[serial:open]' 2400
+  '_init_sensor'
+  '_sendhex' 4
+  '[serial:open]' 115200
+  waitMillis 10
+  '_sendhex' 'c0003f'
+  _pup_connected = 1
+  '[serial:open]' 115200
+}
+
+to '_send_data' mode {
+  if (_pup_connected == 1) {
+    local 'payload' (at (mode + 1) _pup_payloads)
+    local 'loglen' (at 5 (at (mode + 1) _pup_commands))
+    local 'list' ('[data:makeList]' (((hexToInt 'c0') | (loglen << 3)) | mode))
+    for i (1 << loglen) {
+      '[data:addLast]' (at i payload) list
+    }
+    '_sendatachk' list
+  }
+}
+
+to '_sendatachk' data {
+  local 'chk' 255
+  for i (size data) {
+    chk = (chk ^ (at i data))
+  }
+  '[data:addLast]' chk data
+  '[serial:write]' data
+}
+
+to '_sendhex' hexstr {
+  if (isType hexstr 'number') {
+    local 'data' (newList 1)
+    atPut 1 data hexstr
+  } else {
+    local 'len' ((size hexstr) / 2)
+    local 'data' (newList len)
+    for i len {
+      atPut i data (hexToInt ('[data:copyFromTo]' hexstr ((i * 2) - 1) (i * 2)))
+    }
+  }
+  '[serial:write]' data
+  waitMillis 1
+}
+
+to '_set_payload' mode payload {
+  atPut (mode + 1) _pup_payloads payload
+}
+
+to '_tohex' data {
+  local 'hexstr' ('[data:toString]' '')
+  for i (size data) {
+    local 'hexstr' ('[data:join]' hexstr ('dec2any Base' '16' (at i data) 2 false))
+  }
+  return hexstr
+}
+
+to '_wordstobytes' words {
+  local 'bytes' ('[data:makeList]')
+  for i (size words) {
+    bytes = ('[data:join]' bytes ('_wordtobyte' (at i words)))
+  }
+  return bytes
+}
+
+to '_wordtobyte' word {
+  local 'bytes' ('[data:makeList]' (word & 255) (word >> 8))
+  return bytes
+}
+
+to add_command cmd to_hub from_hub type {
+  comment 'type is dropdown ''B'', ''W'', ''L'' for byte, 16-bit word, 32-bit int'
+  local 'data_type' ('_get_type' type)
+  local 'new_command' ('[data:makeList]' cmd to_hub from_hub data_type ('_calc_len_data' data_type to_hub from_hub))
+  if ((size _pup_commands) == 0) {
+    _pup_commands = ('[data:makeList]' new_command)
+  } else {
+    '[data:addLast]' new_command _pup_commands
+  }
+  _pup_nr_modes = (size _pup_commands)
+  '[data:addLast]' (newList 32) _pup_payloads
+}
+
+to init {
+  comment 'Initialize global variables'
+  _pup_commands = ('[data:makeList]')
+  _pup_cur_mode = 0
+  _pup_senddata = (newList 32)
+  _pup_payloads = ('[data:makeList]')
+  _pup_last_nack = ('[serial:millis]')
+}
+
+to process {
+  local 'local_data' ('_heartbeat')
+  local 'data_from_hub' (booleanConstant false)
+  if ((size local_data) > 0) {
+    comment 'arguments passed'
+    data_from_hub = (booleanConstant true)
+    local 'mode' (at 1 local_data)
+    local 'payload_bytes' (at 2 local_data)
+  } else {
+    local 'mode' _pup_cur_mode
+    local 'payload' ('[data:makeList]')
+  }
+  local 'function_name' (at 1 (at (mode + 1) _pup_commands))
+  local 'has_return' ((at 2 (at (mode + 1) _pup_commands)) > 0)
+  local 'has_arg' ((at 3 (at (mode + 1) _pup_commands)) > 0)
+  local 'data_type' (at 4 (at (mode + 1) _pup_commands))
+  local 'tot_len' (at 5 (at (mode + 1) _pup_commands))
+  if data_from_hub {
+    if (data_type == 0) {
+      local 'payload' payload_bytes
+    } (data_type == 1) {
+      local 'payload' ('_bytestowords' payload_bytes)
+    } (data_type == 2) {
+      local 'payload' ('_bytestolongs' payload_bytes)
+    }
+  }
+  if (or (and (not has_arg) has_return) (and has_arg (and has_return data_from_hub))) {
+    local 'ret_val' (callCustomReporter function_name payload)
+    if (isType ret_val 'number') {
+      ret_val = ('[data:makeList]' ret_val)
+    }
+    '_set_payload' mode ('_make_payload' ret_val data_type tot_len)
+  } (and has_arg (and (not has_return) data_from_hub)) {
+    callCustomCommand function_name payload
+  }
+  '_send_data' _pup_cur_mode
+}
+
+to reset_nack {
+  _pup_last_nack = ('[serial:millis]')
+}
+

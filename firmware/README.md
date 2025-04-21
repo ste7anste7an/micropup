@@ -1,4 +1,4 @@
-# Changes to MicroBlcoks firmware
+# Changes to MicroBlocks firmware
 
 In the repo https://bitbucket.org/john_maloney/smallvm/src/dev/ you will find the source code for MicroBlocks. This is a PlatformIO project for different architectures (ESP32, NRF52, Pi Pico). The basic assumption of MicroBlcoks is that some hardware interfaces are fixed to a spcific ser of GPIO. The I2C and SPI pins are configured in the firmware.
 Therefore, to meet the requirements for porting MicroBlcoks to the LMS-ESP32 platform, some changes had to be made:

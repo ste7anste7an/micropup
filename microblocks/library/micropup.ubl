@@ -1,12 +1,12 @@
 module micropup
 author Ste7an
-version 0 1 
+version 0 2 
 choices data_type b h l 
-description 'Library to facilitate commnuication with Pybricks hubs. See https://github.com/ste7anste7an/micropup'
+description 'Library to facilitate communication with Pybricks hubs. See https://github.com/ste7anste7an/micropup'
 variables _pup_commands tmp _pup_nr_modes _pup_cur_mode _pup_last_nack _pup_connected _pup_senddata _pup_payloads 
 
   spec ' ' 'init' 'init'
-  spec ' ' 'add_command' 'add_command _ to_hub _ from_hub _ type _' 'str auto auto str.data_type' '' '1' '1' 'B'
+  spec ' ' 'add_command' 'add_command _ to_hub _ from_hub _ type _' 'str auto auto str.data_type' '' '1' '1' 'b'
   spec ' ' 'process' 'process'
   spec ' ' 'reset_nack' 'reset_nack'
   spec 'r' '_tohex' '_tohex _' 'auto' '10'

@@ -3,9 +3,9 @@ author Ste7an
 version 0 2 
 choices data_type b h l 
 description 'Library to facilitate communication with Pybricks hubs. See https://github.com/ste7anste7an/micropup'
-variables _pup_commands tmp _pup_nr_modes _pup_cur_mode _pup_last_nack _pup_connected _pup_senddata _pup_payloads 
+variables _pup_sensor_id _pup_commands _pup_nr_modes _pup_cur_mode _pup_last_nack _pup_connected _pup_senddata _pup_payloads 
 
-  spec ' ' 'init' 'init'
+  spec ' ' 'init' 'init : sensor_id _' 'auto' 62
   spec ' ' 'add_command' 'add_command _ to_hub _ from_hub _ type _' 'str auto auto str.data_type' '' '1' '1' 'b'
   spec ' ' 'process' 'process'
   spec ' ' 'reset_nack' 'reset_nack'
@@ -106,6 +106,8 @@ to '_heartbeat' {
       _pup_last_nack = ('[serial:millis]')
       local 'ser_data' ('[serial:read]')
       _pup_cur_mode = (at 1 ser_data)
+      sayIt _pup_cur_mode
+      waitMillis 500
       '_send_data' _pup_cur_mode
     }
   }
@@ -123,7 +125,7 @@ to '_hextolist' hexstr {
 to '_init_sensor' {
   '_sendhex' 0
   comment 'TYPE_ID'
-  '_sendhex' '403e81'
+  '_sendatachk' ('[data:makeList]' (hexToInt '40') _pup_sensor_id)
   comment 'CMD_MODES 0x49 <nr_modes> <nr_views>'
   '_sendatachk' ('[data:makeList]' (hexToInt '49') (_pup_nr_modes - 1) (_pup_nr_modes - 1))
   comment 'set baud rate to 115200'
@@ -344,8 +346,9 @@ to add_command cmd to_hub from_hub type {
   '[data:addLast]' (newList 32) _pup_payloads
 }
 
-to init {
+to init sensor_id {
   comment 'Initialize global variables'
+  _pup_sensor_id = sensor_id
   _pup_commands = ('[data:makeList]')
   _pup_cur_mode = 0
   _pup_senddata = (newList 32)

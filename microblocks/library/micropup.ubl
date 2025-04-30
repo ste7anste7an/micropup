@@ -106,8 +106,6 @@ to '_heartbeat' {
       _pup_last_nack = ('[serial:millis]')
       local 'ser_data' ('[serial:read]')
       _pup_cur_mode = (at 1 ser_data)
-      sayIt _pup_cur_mode
-      waitMillis 500
       '_send_data' _pup_cur_mode
     }
   }
@@ -277,8 +275,7 @@ to '_sendatachk' data {
   for i (size data) {
     chk = (chk ^ (at i data))
   }
-  '[data:addLast]' chk data
-  '[serial:write]' data
+  '[serial:write]' ('[data:join]' data ('[data:makeList]' chk))
 }
 
 to '_sendhex' hexstr {

@@ -344,8 +344,12 @@ to add_command cmd to_hub from_hub type {
 }
 
 to init sensor_id {
+  if (sensor_id == 0) {
+    _pup_sensor_id = 61
+  } else {
+    _pup_sensor_id = sensor_id
+  }
   comment 'Initialize global variables'
-  _pup_sensor_id = sensor_id
   _pup_commands = ('[data:makeList]')
   _pup_cur_mode = 0
   _pup_senddata = (newList 32)

@@ -1,0 +1,14 @@
+module lmsesp
+author Ste7an
+version 1 0 
+description 'Extra system functions for Serial communication and ESP32 version
+This isincorporated in a MicroPup firmware version for LMS-ESP32'
+
+
+  spec 'r' '[serial:readNr]' 'serial read _ bytes' 'num' '10'
+  spec 'r' '[serial:available]' 'serial available' 
+  spec 'r' '[io:WiiButton]' 'Wii Button' 
+  spec 'r' '[io:WiiNunchuk_x]' 'Wii Nunchuk x' 
+  spec 'r' '[io:WiiNunchuk_y]' 'Wii Nunchuk y' 
+  spec 'r' '[serial:espversion]' 'get esp version' 
+  spec 'r' '[serial:millis]' 'millis' 

@@ -1,0 +1,18 @@
+module lmsesp
+author Ste7an
+version 1 0 
+description 'Extra system functions for Serial communication and ESP32 version
+This isincorporated in a MicroPup firmware version for LMS-ESP32'
+
+
+  spec 'r' '[serial:readNr]' 'serial read _ bytes' 'num' '10'
+  spec 'r' '[serial:available]' 'serial available' 
+  spec 'r' '[io:bp_connected]' 'BP connected' 
+  spec 'r' '[io:bp_button]' 'BP buttons' 
+  spec 'r' '[io:bp_dpad]' 'BP dpads' 
+  spec 'r' '[io:bp_axisx]' 'BP AxisX' 
+  spec 'r' '[io:bp_axisy]' 'BP AxisY' 
+  spec 'r' '[io:bp_axisrx]' 'BP AxisRX' 
+  spec 'r' '[io:bp_axisry]' 'BP AxisRY' 
+  spec 'r' '[serial:espversion]' 'get esp version' 
+  spec 'r' '[serial:millis]' 'millis' 

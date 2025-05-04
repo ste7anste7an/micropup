@@ -82,14 +82,14 @@ to '_get_type' type {
 }
 
 to '_heartbeat' {
-  if ((('[serial:millis]') - _pup_last_nack) > 4000) {'_reset'}
+  if (((millisOp) - _pup_last_nack) > 4000) {'_reset'}
   if (('[serial:available]') > 0) {
     local 'cmd' (at 1 ('[serial:readNr]' 1))
     if (cmd == 2) {
-      _pup_last_nack = ('[serial:millis]')
+      _pup_last_nack = (millisOp)
       '_sendatachk' ('[data:makeList]' ((hexToInt '46') | 0) 0)
     } (cmd == (hexToInt '46')) {
-      _pup_last_nack = ('[serial:millis]')
+      _pup_last_nack = (millisOp)
       local 'ser_data' ('[serial:read]')
       comment 'mode = (b & 0b111)'
       local 'wrtmode' ((at 3 ser_data) & 7)
@@ -103,7 +103,7 @@ to '_heartbeat' {
       }
       return ('[data:makeList]' wrtmode list)
     } (cmd == (hexToInt '43')) {
-      _pup_last_nack = ('[serial:millis]')
+      _pup_last_nack = (millisOp)
       local 'ser_data' ('[serial:read]')
       _pup_cur_mode = (at 1 ser_data)
       '_send_data' _pup_cur_mode
@@ -229,7 +229,7 @@ to '_make_payload' payload data_type tot_len {
 
 to '_reset' {
   '[serial:close]'
-  _pup_last_nack = ('[serial:millis]')
+  _pup_last_nack = (millisOp)
   _pup_cur_mode = 0
   _pup_connected = 0
   local 'tmp_var' 0
@@ -354,7 +354,7 @@ to init sensor_id {
   _pup_cur_mode = 0
   _pup_senddata = (newList 32)
   _pup_payloads = ('[data:makeList]')
-  _pup_last_nack = ('[serial:millis]')
+  _pup_last_nack = (millisOp)
 }
 
 to process {
@@ -396,6 +396,6 @@ to process {
 }
 
 to reset_nack {
-  _pup_last_nack = ('[serial:millis]')
+  _pup_last_nack = (millisOp)
 }
 

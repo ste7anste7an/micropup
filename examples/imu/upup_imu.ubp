@@ -18,11 +18,11 @@ to imu x y z {
   '[tft:setPixel]' xval (120 + (z / (14000 / 120))) (colorSwatch 69 241 255 255)
 }
 
-script 985 104 {
+script 713 63 {
 to imu {}
 }
 
-script 465 114 {
+script 222 88 {
 whenStarted
 '[tft:clear]'
 init
@@ -254,69 +254,15 @@ description 'Primitives to support the QVGA touch screen display on the (discont
   spec 'r' '[tft:tftTouchY]' 'TFT touch Y position'
   spec 'r' '[tft:tftTouchPressure]' 'TFT touch pressure'
 
-module dec2anyBase
-author 'Turgut Guneysu'
-version 1 2 
-choices BaseMenu '2' '8' '16' '32' 
-description 'Converts DEC numbers into any Base system.
-eg: BIN (base=2) or OCT (base=8) or HEX (base=16)
-
-Changes: fix padding
-'
-
-  spec 'r' 'dec2any Base' 'dec2any Base _ Dec# _ PadLen _ Rev _' 'str.BaseMenu num num bool' '16' 255 4 false
-
-to 'dec2any Base' base decNo padLength reversed {
-  local '_answer' ('[data:makeList]')
-  local '_output' ''
-  repeatUntil (decNo < base) {
-    '[data:addLast]' (decNo - ((decNo / base) * base)) _answer
-    decNo = (decNo / base)
-  }
-  '[data:addLast]' decNo _answer
-  repeatUntil ((size _answer) == 0) {
-    if ((at 'last' _answer) == 0) {
-      _output = ('[data:join]' _output '0')
-    } else {
-      _output = ('[data:join]' _output (at (at 'last' _answer) '123456789ABCDEFGHIJKLMNOPQRSTUV'))
-    }
-    '[data:delete]' 'last' _answer
-  }
-  if (and (padLength > 0) ((size _output) < padLength)) {
-    _output = ('[data:join]' ('[data:copyFromTo]' '0000000000000000' 1 (padLength - (size _output))) _output)
-  }
-  if reversed {
-    _answer = ('[data:split]' _output '')
-    _output = ('[data:makeList]')
-    repeat (size _answer) {
-      '[data:addLast]' (at 'last' _answer) _output
-      '[data:delete]' 'last' _answer
-    }
-    _output = ('[data:join]' '' ('[data:joinStrings]' _output))
-  }
-  return _output
-}
-
-
-module extra
-author Ste7an
-version 1 0 
-description 'Extra system functions for Serialcommunication and ESP32 version'
-
-  spec 'r' '[serial:readNr]' 'serial read _ bytes' 'num' 10
-  spec 'r' '[serial:available]' 'serial available'
-  spec 'r' '[serial:espversion]' 'get esp version'
-  spec 'r' '[serial:millis]' 'millis'
-
 module micropup
 author Ste7an
-version 0 1 
+version 0 2 
 choices data_type b h l 
-description 'Library to facilitate commnuication with Pybricks hubs. See https://github.com/ste7anste7an/micropup'
-variables _pup_commands tmp _pup_nr_modes _pup_cur_mode _pup_last_nack _pup_connected _pup_senddata _pup_payloads 
+description 'Library to facilitate communication with Pybricks hubs. See https://github.com/ste7anste7an/micropup'
+variables _pup_sensor_id _pup_commands _pup_nr_modes _pup_cur_mode _pup_last_nack _pup_connected _pup_senddata _pup_payloads 
 
-  spec ' ' 'init' 'init'
-  spec ' ' 'add_command' 'add_command _ to_hub _ from_hub _ type _' 'str auto auto str.data_type' '' '1' '1' 'B'
+  spec ' ' 'init' 'init : sensor_id _' 'auto' 62
+  spec ' ' 'add_command' 'add_command _ to_hub _ from_hub _ type _' 'str auto auto str.data_type' '' '1' '1' 'b'
   spec ' ' 'process' 'process'
   spec ' ' 'reset_nack' 'reset_nack'
   spec 'r' '_tohex' '_tohex _' 'auto' '10'
@@ -392,14 +338,14 @@ to '_get_type' type {
 }
 
 to '_heartbeat' {
-  if ((('[serial:millis]') - _pup_last_nack) > 4000) {'_reset'}
+  if (((millisOp) - _pup_last_nack) > 4000) {'_reset'}
   if (('[serial:available]') > 0) {
     local 'cmd' (at 1 ('[serial:readNr]' 1))
     if (cmd == 2) {
-      _pup_last_nack = ('[serial:millis]')
+      _pup_last_nack = (millisOp)
       '_sendatachk' ('[data:makeList]' ((hexToInt '46') | 0) 0)
     } (cmd == (hexToInt '46')) {
-      _pup_last_nack = ('[serial:millis]')
+      _pup_last_nack = (millisOp)
       local 'ser_data' ('[serial:read]')
       comment 'mode = (b & 0b111)'
       local 'wrtmode' ((at 3 ser_data) & 7)
@@ -413,7 +359,7 @@ to '_heartbeat' {
       }
       return ('[data:makeList]' wrtmode list)
     } (cmd == (hexToInt '43')) {
-      _pup_last_nack = ('[serial:millis]')
+      _pup_last_nack = (millisOp)
       local 'ser_data' ('[serial:read]')
       _pup_cur_mode = (at 1 ser_data)
       '_send_data' _pup_cur_mode
@@ -433,7 +379,7 @@ to '_hextolist' hexstr {
 to '_init_sensor' {
   '_sendhex' 0
   comment 'TYPE_ID'
-  '_sendhex' '403e81'
+  '_sendatachk' ('[data:makeList]' (hexToInt '40') _pup_sensor_id)
   comment 'CMD_MODES 0x49 <nr_modes> <nr_views>'
   '_sendatachk' ('[data:makeList]' (hexToInt '49') (_pup_nr_modes - 1) (_pup_nr_modes - 1))
   comment 'set baud rate to 115200'
@@ -539,7 +485,7 @@ to '_make_payload' payload data_type tot_len {
 
 to '_reset' {
   '[serial:close]'
-  _pup_last_nack = ('[serial:millis]')
+  _pup_last_nack = (millisOp)
   _pup_cur_mode = 0
   _pup_connected = 0
   local 'tmp_var' 0
@@ -585,8 +531,7 @@ to '_sendatachk' data {
   for i (size data) {
     chk = (chk ^ (at i data))
   }
-  '[data:addLast]' chk data
-  '[serial:write]' data
+  '[serial:write]' ('[data:join]' data ('[data:makeList]' chk))
 }
 
 to '_sendhex' hexstr {
@@ -654,13 +599,18 @@ to add_command cmd to_hub from_hub type {
   '[data:addLast]' (newList 32) _pup_payloads
 }
 
-to init {
+to init sensor_id {
+  if (sensor_id == 0) {
+    _pup_sensor_id = 61
+  } else {
+    _pup_sensor_id = sensor_id
+  }
   comment 'Initialize global variables'
   _pup_commands = ('[data:makeList]')
   _pup_cur_mode = 0
   _pup_senddata = (newList 32)
   _pup_payloads = ('[data:makeList]')
-  _pup_last_nack = ('[serial:millis]')
+  _pup_last_nack = (millisOp)
 }
 
 to process {
@@ -702,6 +652,6 @@ to process {
 }
 
 to reset_nack {
-  _pup_last_nack = ('[serial:millis]')
+  _pup_last_nack = (millisOp)
 }
 

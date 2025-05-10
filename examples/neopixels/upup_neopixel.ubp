@@ -2,64 +2,25 @@ module main
 author unknown
 version 1 0 
 description ''
-variables count 
 
-  spec 'r' '_calc_len_data' '_calc_len_data _ _ _' 'auto auto auto' '10' '10' '10'
-  spec 'r' '_get_type' '_get_type _' 'auto' '10'
-  spec 'r' '_log_len' '_log_len _' 'auto' '10'
-  spec ' ' 'add_command' 'add_command _ to_hub _ from_hub _ type _' 'str auto auto str.data_type' '' '1' '1' 'B'
-  spec 'r' 'kat' 'kat _ _ _ _ _ _ _ _' 'auto auto auto auto auto auto auto auto' '10' '10' '10' '10' '10' '10' '10' '10'
-  spec ' ' 'process' 'process'
-  spec 'r' 'aap' 'aap _' 'auto' '10'
-  spec ' ' 'muis' 'muis _ _ _' 'auto auto auto' '10' '10' '10'
-  spec ' ' 'time' 'time'
+  spec ' ' 'led' 'led _ _ _ _' 'auto auto auto auto' 10 '10' '10' '10'
 
-to aap a {
-  return ('[data:makeList]' (a * 2))
+to led n r g b {
+  setNeoPixelColor n (colorFromRGB r g b)
 }
 
-to kat foo bar baz quux garply spam frob corge {
-  return ('[data:makeList]' corge frob spam garply quux baz bar foo)
-}
-
-to muis foo bar baz {
-  graphIt foo bar baz
-}
-
-to time {
-  return ('[data:makeList]' ('[serial:millis]'))
-}
-
-script 912 69 {
-to aap {}
-}
-
-script 330 169 {
+script 123 148 {
 whenStarted
-count = 0
-neoPixelAttach 1 25
+neoPixelAttach 9 21
 init
-add_command 'aap' 1 1 'W'
-add_command 'kat' 8 8 'B'
-add_command 'muis' 0 3 'W'
-add_command 'time' 1 0 'I'
+add_command 'led' 0 4 'h'
 forever {
-  count = ((count + 1) % 100)
   process
-  waitMillis 20
 }
 }
 
-script 917 208 {
-to kat {}
-}
-
-script 914 399 {
-to muis {}
-}
-
-script 918 526 {
-to time {}
+script 589 169 {
+to led {}
 }
 
 
@@ -275,17 +236,18 @@ to setNeoPixelColors10 c1 c2 c3 c4 c5 c6 c7 c8 c9 c10 {
 
 module micropup
 author Ste7an
-version 0 1 
-choices data_type B W I 
-description 'Library to facilitate commnuication with Pybricks hubs. See https://github.com/ste7anste7an/micropup'
-variables _pup_commands tmp _pup_nr_modes _pup_cur_mode _pup_last_nack _pup_connected _pup_senddata _pup_payloads 
+version 0 2 
+choices data_type b h l 
+description 'Library to facilitate communication with Pybricks hubs. See https://github.com/ste7anste7an/micropup'
+variables _pup_sensor_id _pup_commands _pup_nr_modes _pup_cur_mode _pup_last_nack _pup_connected _pup_senddata _pup_payloads 
 
-  spec ' ' 'init' 'init'
-  spec ' ' 'add_command' 'add_command _ to_hub _ from_hub _ type _' 'str auto auto str.data_type' '' '1' '1' 'B'
+  spec ' ' 'init' 'init : sensor_id _' 'auto' 62
+  spec ' ' 'add_command' 'add_command _ to_hub _ from_hub _ type _' 'str auto auto str.data_type' '' '1' '1' 'b'
   spec ' ' 'process' 'process'
   spec ' ' 'reset_nack' 'reset_nack'
   spec 'r' '_tohex' '_tohex _' 'auto' '10'
   spec 'r' '_bytestowords' '_bytestowords _' 'auto' '10'
+  spec 'r' '_unsignedbytes' '_unsignedbytes _' 'auto' '10'
   spec 'r' '_bytetoword' '_bytetoword _' 'auto' '10'
   spec 'r' '_wordstobytes' '_wordstobytes _' 'auto' '10'
   spec 'r' '_wordtobyte' '_wordtobyte _' 'auto' '10'
@@ -318,10 +280,11 @@ to '_bytestolongs' bytes {
 }
 
 to '_bytestowords' bytes {
-  local 'words' ('[data:makeList]')
-  for i ((size bytes) / 2) {
+  local 'len' ((size bytes) / 2)
+  local 'words' (newList len)
+  for i len {
     local 'cnt' (i * 2)
-    '[data:addLast]' ('_bytetoword' ('[data:makeList]' (at (cnt - 1) bytes) (at (cnt + 0) bytes))) words
+    atPut i words ('_bytetoword' ('[data:makeList]' (at (cnt - 1) bytes) (at (cnt + 0) bytes)))
   }
   return words
 }
@@ -331,7 +294,11 @@ to '_bytetolong' bytes {
 }
 
 to '_bytetoword' bytes {
-  return ((at 1 bytes) + ((at 2 bytes) << 8))
+  local 'unsigned' ((at 1 bytes) + ((at 2 bytes) << 8))
+  if (unsigned > 32767) {
+    unsigned = (unsigned - 65536)
+  }
+  return unsigned
 }
 
 to '_calc_len_data' data_type to_hub from_hub {
@@ -340,9 +307,9 @@ to '_calc_len_data' data_type to_hub from_hub {
 
 to '_get_type' type {
   local 'data_type' 0
-  if (type == 'I') {
+  if (type == 'l') {
     data_type = 2
-  } (type == 'W') {
+  } (type == 'h') {
     data_type = 1
   } else {
     data_type = 0
@@ -351,14 +318,14 @@ to '_get_type' type {
 }
 
 to '_heartbeat' {
-  if ((('[serial:millis]') - _pup_last_nack) > 4000) {'_reset'}
+  if (((millisOp) - _pup_last_nack) > 4000) {'_reset'}
   if (('[serial:available]') > 0) {
     local 'cmd' (at 1 ('[serial:readNr]' 1))
     if (cmd == 2) {
-      _pup_last_nack = ('[serial:millis]')
+      _pup_last_nack = (millisOp)
       '_sendatachk' ('[data:makeList]' ((hexToInt '46') | 0) 0)
     } (cmd == (hexToInt '46')) {
-      _pup_last_nack = ('[serial:millis]')
+      _pup_last_nack = (millisOp)
       local 'ser_data' ('[serial:read]')
       comment 'mode = (b & 0b111)'
       local 'wrtmode' ((at 3 ser_data) & 7)
@@ -366,16 +333,15 @@ to '_heartbeat' {
       comment ' len = 2 ** ((b & 0b111000) >> 3)'
       local 'lenpow2' (((at 3 ser_data) & 56) >> 3)
       local 'len' (1 << lenpow2)
-      local 'list' ('[data:makeList]')
+      local 'list' (newList len)
       for i len {
-        '[data:addLast]' (at (i + 3) ser_data) list
+        atPut i list (at (i + 3) ser_data)
       }
       return ('[data:makeList]' wrtmode list)
     } (cmd == (hexToInt '43')) {
-      _pup_last_nack = ('[serial:millis]')
+      _pup_last_nack = (millisOp)
       local 'ser_data' ('[serial:read]')
       _pup_cur_mode = (at 1 ser_data)
-      waitMillis 5
       '_send_data' _pup_cur_mode
     }
   }
@@ -393,7 +359,7 @@ to '_hextolist' hexstr {
 to '_init_sensor' {
   '_sendhex' 0
   comment 'TYPE_ID'
-  '_sendhex' '403e81'
+  '_sendatachk' ('[data:makeList]' (hexToInt '40') _pup_sensor_id)
   comment 'CMD_MODES 0x49 <nr_modes> <nr_views>'
   '_sendatachk' ('[data:makeList]' (hexToInt '49') (_pup_nr_modes - 1) (_pup_nr_modes - 1))
   comment 'set baud rate to 115200'
@@ -499,7 +465,7 @@ to '_make_payload' payload data_type tot_len {
 
 to '_reset' {
   '[serial:close]'
-  _pup_last_nack = ('[serial:millis]')
+  _pup_last_nack = (millisOp)
   _pup_cur_mode = 0
   _pup_connected = 0
   local 'tmp_var' 0
@@ -531,10 +497,12 @@ to '_send_data' mode {
     local 'payload' (at (mode + 1) _pup_payloads)
     local 'loglen' (at 5 (at (mode + 1) _pup_commands))
     local 'list' ('[data:makeList]' (((hexToInt 'c0') | (loglen << 3)) | mode))
-    for i (1 << loglen) {
-      '[data:addLast]' (at i payload) list
+    local 'len' (1 << loglen)
+    local 'datalist' (newList len)
+    for i len {
+      atPut i datalist (at i payload)
     }
-    '_sendatachk' list
+    '_sendatachk' ('[data:join]' list datalist)
   }
 }
 
@@ -543,8 +511,7 @@ to '_sendatachk' data {
   for i (size data) {
     chk = (chk ^ (at i data))
   }
-  '[data:addLast]' chk data
-  '[serial:write]' data
+  '[serial:write]' ('[data:join]' data ('[data:makeList]' chk))
 }
 
 to '_sendhex' hexstr {
@@ -574,6 +541,18 @@ to '_tohex' data {
   return hexstr
 }
 
+to '_unsignedbytes' bytes {
+  local 'unsigned' ('[data:makeList]')
+  for i (size bytes) {
+    local 'val' (at i bytes)
+    if (val > 127) {
+      val = (val - 256)
+    }
+    '[data:addLast]' val unsigned
+  }
+  return unsigned
+}
+
 to '_wordstobytes' words {
   local 'bytes' ('[data:makeList]')
   for i (size words) {
@@ -600,13 +579,18 @@ to add_command cmd to_hub from_hub type {
   '[data:addLast]' (newList 32) _pup_payloads
 }
 
-to init {
+to init sensor_id {
+  if (sensor_id == 0) {
+    _pup_sensor_id = 61
+  } else {
+    _pup_sensor_id = sensor_id
+  }
   comment 'Initialize global variables'
   _pup_commands = ('[data:makeList]')
   _pup_cur_mode = 0
   _pup_senddata = (newList 32)
   _pup_payloads = ('[data:makeList]')
-  _pup_last_nack = ('[serial:millis]')
+  _pup_last_nack = (millisOp)
 }
 
 to process {
@@ -628,7 +612,7 @@ to process {
   local 'tot_len' (at 5 (at (mode + 1) _pup_commands))
   if data_from_hub {
     if (data_type == 0) {
-      local 'payload' payload_bytes
+      local 'payload' ('_unsignedbytes' payload_bytes)
     } (data_type == 1) {
       local 'payload' ('_bytestowords' payload_bytes)
     } (data_type == 2) {
@@ -648,6 +632,6 @@ to process {
 }
 
 to reset_nack {
-  _pup_last_nack = ('[serial:millis]')
+  _pup_last_nack = (millisOp)
 }
 

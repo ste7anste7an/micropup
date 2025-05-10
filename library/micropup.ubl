@@ -1,7 +1,7 @@
 module micropup
 author Ste7an
 version 0 2 
-choices data_type b h l 
+choices data_type b h i 
 description 'Library to facilitate communication with Pybricks hubs. See https://github.com/ste7anste7an/micropup'
 variables _pup_sensor_id _pup_commands _pup_nr_modes _pup_cur_mode _pup_last_nack _pup_connected _pup_senddata _pup_payloads 
 
@@ -71,7 +71,7 @@ to '_calc_len_data' data_type to_hub from_hub {
 
 to '_get_type' type {
   local 'data_type' 0
-  if (type == 'l') {
+  if (type == 'i') {
     data_type = 2
   } (type == 'h') {
     data_type = 1
@@ -331,7 +331,7 @@ to '_wordtobyte' word {
 }
 
 to add_command cmd to_hub from_hub type {
-  comment 'type is dropdown ''B'', ''W'', ''L'' for byte, 16-bit word, 32-bit int'
+  comment 'type is dropdown ''b'', ''h'', ''i'' for byte, 16-bit word, 32-bit int'
   local 'data_type' ('_get_type' type)
   local 'new_command' ('[data:makeList]' cmd to_hub from_hub data_type ('_calc_len_data' data_type to_hub from_hub))
   if ((size _pup_commands) == 0) {

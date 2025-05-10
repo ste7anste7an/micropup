@@ -2,7 +2,6 @@ module main
 author unknown
 version 1 0 
 description ''
-variables joy 
 
   spec 'r' 'joystick' 'joystick'
 
@@ -26,231 +25,10 @@ to joystick {}
 }
 
 
-module NeoPixel Output
-author MicroBlocks
-version 1 11 
-description 'Control NeoPixel (WS2812) RGB LED strips and rings.
-'
-variables _np_pixels 
-
-  spec ' ' 'neoPixelAttach' 'attach _ LED NeoPixel strip to pin _ : has white _' 'num auto bool' 10 '' false
-  spec ' ' 'setNeoPixelColors10' 'set NeoPixels _ _ _ _ _ _ _ _ _ _' 'color color color color color color color color color color'
-  spec ' ' 'clearNeoPixels' 'clear NeoPixels'
-  spec ' ' 'neoPixelSetAllToColor' 'set all NeoPixels color _' 'color'
-  spec ' ' 'setNeoPixelColor' 'set NeoPixel _ color _' 'num color' 1
-  space
-  spec 'r' 'neoPixel_colorSwatch' '_' 'color'
-  spec 'r' 'colorFromRGB' 'color r _ g _ b _ (0-255)' 'num num num' 0 100 100
-  spec 'r' 'randomColor' 'random color'
-  space
-  spec ' ' 'rotateNeoPixelsBy' 'rotate NeoPixels by _' 'auto' 1
-  space
-  spec ' ' 'NeoPixel_brighten' 'brighten NeoPixel _ by _' 'num num' 1 10
-  spec ' ' 'NeoPixel_brighten_all' 'brighten all NeoPixels by _' 'num' 10
-  spec ' ' 'NeoPixel_shift_color' 'shift NeoPixel _ color by _' 'num num' 1 10
-  spec ' ' 'NeoPixel_shift_all_colors' 'shift all NeoPixel colors by _' 'num' 10
-  space
-  spec ' ' '_NeoPixel_ensureInitialized' '_NeoPixel_ensureInitialized'
-  spec ' ' '_NeoPixel_increaseRGB' '_NeoPixel_increaseRGB of _ by _' 'num num' 1 10
-  spec ' ' '_NeoPixel_rotate' '_NeoPixel_rotate_left _' 'bool' true
-  spec ' ' '_NeoPixel_update' '_NeoPixel_update'
-  spec ' ' '_NeoPixel_shift_hue' '_NeoPixel_shift_hue of _ by _' 'auto auto' '10' '10'
-
-to NeoPixel_brighten i delta {
-  '_NeoPixel_increaseRGB' i delta
-  '_NeoPixel_update'
-}
-
-to NeoPixel_brighten_all delta {
-  for i (size _np_pixels) {
-    '_NeoPixel_increaseRGB' i delta
-  }
-  '_NeoPixel_update'
-}
-
-to NeoPixel_shift_all_colors delta {
-  for i (size _np_pixels) {
-    '_NeoPixel_shift_hue' i delta
-  }
-  '_NeoPixel_update'
-}
-
-to NeoPixel_shift_color i delta {
-  '_NeoPixel_shift_hue' i delta
-  '_NeoPixel_update'
-}
-
-to '_NeoPixel_ensureInitialized' {
-  if (_np_pixels == 0) {if (or ((boardType) == 'M5Atom-Matrix') (or ((boardType) == 'Mbits') ((boardType) == 'micro:STEAMakers'))) {
-    neoPixelAttach 25 '' false
-  } ((boardType) == 'D1-Mini') {
-    comment 'D1 mini kit'
-    neoPixelAttach 7 15 false
-  } else {
-    neoPixelAttach 10 '' false
-  }}
-}
-
-to '_NeoPixel_increaseRGB' i delta {
-  if (or (i < 1) (i > (size _np_pixels))) {return}
-  local 'rgb' (at i _np_pixels)
-  if (rgb != 0) {
-    local 'h' ('[misc:hue]' rgb)
-    local 's' ('[misc:saturation]' rgb)
-    local 'v' (('[misc:brightness]' rgb) + delta)
-    v = (maximum 20 (minimum v 100))
-    atPut i _np_pixels ('[misc:hsvColor]' h s v)
-  }
-}
-
-to '_NeoPixel_rotate' left {
-  '_NeoPixel_ensureInitialized'
-  local 'length' (size _np_pixels)
-  if left {
-    local 'first' (at 1 _np_pixels)
-    for i (length - 1) {
-      atPut i _np_pixels (at (i + 1) _np_pixels)
-    }
-    atPut length _np_pixels first
-  } else {
-    local 'last' (at length _np_pixels)
-    for i (length - 1) {
-      atPut ((length - i) + 1) _np_pixels (at (length - i) _np_pixels)
-    }
-    atPut 1 _np_pixels last
-  }
-}
-
-to '_NeoPixel_shift_hue' i delta {
-  if (or (i < 1) (i > (size _np_pixels))) {return}
-  local 'rgb' (at i _np_pixels)
-  if (rgb != 0) {
-    local 'h' ((('[misc:hue]' rgb) + delta) % 360)
-    local 's' ('[misc:saturation]' rgb)
-    local 'v' ('[misc:brightness]' rgb)
-    atPut i _np_pixels ('[misc:hsvColor]' h s v)
-  }
-}
-
-to '_NeoPixel_update' {
-  '[display:neoPixelSend]' _np_pixels
-  waitMicros 300
-}
-
-to clearNeoPixels {
-  '_NeoPixel_ensureInitialized'
-  atPut 'all' _np_pixels 0
-  '_NeoPixel_update'
-}
-
-to colorFromRGB r g b {
-  r = (maximum 0 (minimum r 255))
-  g = (maximum 0 (minimum g 255))
-  b = (maximum 0 (minimum b 255))
-  return (((r << 16) | (g << 8)) | b)
-}
-
-to neoPixelAttach number pinNumber optionalHasWhite {
-  hasWhite = false
-  if ((pushArgCount) > 2) {
-    hasWhite = optionalHasWhite
-  }
-  if (or (_np_pixels == 0) (number != (size _np_pixels))) {
-    _np_pixels = (newList number)
-  }
-  atPut 'all' _np_pixels 0
-  '[display:neoPixelSetPin]' pinNumber hasWhite
-}
-
-to neoPixelSetAllToColor color {
-  '_NeoPixel_ensureInitialized'
-  atPut 'all' _np_pixels color
-  '_NeoPixel_update'
-}
-
-to neoPixel_colorSwatch color {
-  return color
-}
-
-to randomColor {
-  local 'n1' (random 100 200)
-  local 'n2' (random 0 100)
-  if (1 == (random 1 3)) {
-    return ((n1 << 16) | (n2 << 8))
-  } (1 == (random 1 2)) {
-    return ((n2 << 16) | n1)
-  } else {
-    return ((n1 << 8) | n2)
-  }
-}
-
-to rotateNeoPixelsBy n {
-  '_NeoPixel_ensureInitialized'
-  repeat (absoluteValue n) {
-    '_NeoPixel_rotate' (n > 0)
-  }
-  '_NeoPixel_update'
-}
-
-to setNeoPixelColor i color {
-  '_NeoPixel_ensureInitialized'
-  if (and (1 <= i) (i <= (size _np_pixels))) {
-    atPut i _np_pixels color
-    '_NeoPixel_update'
-  }
-}
-
-to setNeoPixelColors10 c1 c2 c3 c4 c5 c6 c7 c8 c9 c10 {
-  '_NeoPixel_ensureInitialized'
-  if ((size _np_pixels) >= 1) {
-    atPut 1 _np_pixels c1
-  }
-  if ((size _np_pixels) >= 2) {
-    atPut 2 _np_pixels c2
-  }
-  if ((size _np_pixels) >= 3) {
-    atPut 3 _np_pixels c3
-  }
-  if ((size _np_pixels) >= 4) {
-    atPut 4 _np_pixels c4
-  }
-  if ((size _np_pixels) >= 5) {
-    atPut 5 _np_pixels c5
-  }
-  if ((size _np_pixels) >= 6) {
-    atPut 6 _np_pixels c6
-  }
-  if ((size _np_pixels) >= 7) {
-    atPut 7 _np_pixels c7
-  }
-  if ((size _np_pixels) >= 8) {
-    atPut 8 _np_pixels c8
-  }
-  if ((size _np_pixels) >= 9) {
-    atPut 9 _np_pixels c9
-  }
-  if ((size _np_pixels) >= 10) {
-    atPut 10 _np_pixels c10
-  }
-  '_NeoPixel_update'
-}
-
-
-module lmsesp
-author Ste7an
-version 1 0 
-description 'Extra system functions for Serial communication and ESP32 version
-This isincorporated in a MicroPup firmware version for LMS-ESP32'
-
-  spec 'r' '[serial:readNr]' 'serial read _ bytes' 'num' 10
-  spec 'r' '[serial:available]' 'serial available'
-  spec 'r' '[serial:espversion]' 'get esp version'
-  spec 'r' '[serial:millis]' 'millis'
-
 module micropup
 author Ste7an
 version 0 2 
-choices data_type b h l 
+choices data_type b h i 
 description 'Library to facilitate communication with Pybricks hubs. See https://github.com/ste7anste7an/micropup'
 variables _pup_sensor_id _pup_commands _pup_nr_modes _pup_cur_mode _pup_last_nack _pup_connected _pup_senddata _pup_payloads 
 
@@ -320,7 +98,7 @@ to '_calc_len_data' data_type to_hub from_hub {
 
 to '_get_type' type {
   local 'data_type' 0
-  if (type == 'l') {
+  if (type == 'i') {
     data_type = 2
   } (type == 'h') {
     data_type = 1
@@ -580,7 +358,7 @@ to '_wordtobyte' word {
 }
 
 to add_command cmd to_hub from_hub type {
-  comment 'type is dropdown ''B'', ''W'', ''L'' for byte, 16-bit word, 32-bit int'
+  comment 'type is dropdown ''b'', ''h'', ''i'' for byte, 16-bit word, 32-bit int'
   local 'data_type' ('_get_type' type)
   local 'new_command' ('[data:makeList]' cmd to_hub from_hub data_type ('_calc_len_data' data_type to_hub from_hub))
   if ((size _pup_commands) == 0) {

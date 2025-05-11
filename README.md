@@ -6,16 +6,16 @@ To flash the LMS-ESP32 with the MicroBlocks firmware, head over to [firmware.ant
 
 
 # Library for communicating with LEGO hubs
-## MicroBlocks
+## MicroPUP
 
 A library is available for the communication with LEGO hubs. The LMS-ESP32 emulated a lpup lego sensor and uses that protocol to send and receive data to and from the LEGO hub. Add the [micropup.ubl](lirary/micropup.ubl) to your MicroBlocks project. 
 
 ## Pybricks
 Download [library/micropup.py] in pybricks. This is the library fro the Pybrcks side that is compatible with the MicroBlocks library.
 
-
 # Demo code
 
+This direcotry contains demo code running both at the LMS-ESP32 in MicroBlocks and Pybricks code (both as Python and as Blocks)
 
 # Changes to MicroBlocks firmware
 
@@ -23,6 +23,7 @@ In the repo https://bitbucket.org/john_maloney/smallvm/src/dev/ you will find th
 Therefore, to meet the requirements for porting MicroBlcoks to the LMS-ESP32 platform, some changes had to be made:
 
 - I2C needs to be mapped to GPIO4 (SCL) and GPIO5 (SDA)
-- for using the 10-pin connector on the LMS-ESP32v2, we had to remap the SPI pins for the TFT screen. Currently the firmware supports the ILI9341 controller. Support for ST7789 controllers will be added later.
-- The functions for controlling Serial  communications are limited. We added a `Serial.available` and `Serial.read(n)` for only reading `n` bytes
+- for using the 10-pin connector on the LMS-ESP32v2, we had to remap the SPI pins for the TFT screen. Currently the firmware supports the ILI9341 controller. The Touch controller XPT2046 shares the same SPI. Support for ST7789 controllers will be added later.
+- The functions for controlling Serial communications are limited. We added a `Serial.available` and `Serial.read(n)` for only reading `n` bytes
 - Because the different pin-out of the MCU's used on the LMS-ESP32 and LMS-ESP32v2, we had to add a function for reading the ESP32 CPU type, so we can remap serial port pins based on the LMS-ESP32 model.
+- some of these extra functions are svailable in the `lmsesp32.ubl` library.

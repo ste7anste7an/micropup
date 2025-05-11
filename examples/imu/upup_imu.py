@@ -4,9 +4,7 @@ from pybricks.parameters import Button, Color, Direction, Port, Side, Stop, Axis
 from pybricks.robotics import DriveBase
 from pybricks.tools import wait, StopWatch
 
-
 from micropup import MicroPUP
-NUMLEDS = 9
 
 hub = PrimeHub()
 

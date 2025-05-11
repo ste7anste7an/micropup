@@ -2,7 +2,8 @@
 
 ## MicroBlocks
 Load `micropup.ubl` as a library in MicroBlocks. You can drag and drop this library in the MicroBlocks IDE.
-The library 'lmsesp' contains some LMS-ESP32 specific defined functions. 
+
+The library `lmsesp.ubl` contains some LMS-ESP32 specific defined functions. 
 
 ## Pybricks
 ### micropup.py

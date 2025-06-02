@@ -5,17 +5,17 @@ description ''
 variables counter 
 
   spec 'r' 'add' 'add _ _' 'auto auto' '10' '10'
-  spec ' ' 'count' 'count _' 'auto' '10'
   spec 'r' 'val' 'val'
+  spec ' ' 'show' 'show _' 'auto' '10'
 
 to add a b {
   comment 'retuens sum of a and b'
   return (a + b)
 }
 
-to count cnt {
+to show num {
   comment 'shows value of cnt'
-  sayIt 'count' cnt
+  sayIt 'showing' num
 }
 
 to val {
@@ -23,14 +23,14 @@ to val {
   return counter
 }
 
-script 763 66 {
-to count {}
+script 765 50 {
+to show {}
 }
 
-script 225 70 {
+script 225 79 {
 whenStarted
 init
-add_command 'count' 0 1 'h'
+add_command 'show' 0 1 'h'
 add_command 'add' 1 2 'i'
 add_command 'val' 1 0 'h'
 counter = 0
@@ -42,11 +42,11 @@ forever {
 }
 }
 
-script 769 208 {
+script 769 217 {
 to add {}
 }
 
-script 771 358 {
+script 771 367 {
 to val {}
 }
 

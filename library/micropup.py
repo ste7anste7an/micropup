@@ -5,8 +5,6 @@ MODE = const(0)
 NAME = const(1)
 TO_HUB = const(2)
 FROM_HUB = const(3)
-#DATA_TYPE = const(4)
-#DATA_TYPES = ['b':0, 'w':1, 'i':2]
 
 class MicroPUP:
     def __init__(self, port):
@@ -37,7 +35,6 @@ class MicroPUP:
         Call a remote function on the sensor side with the mode_name you defined on both sides.
 
         """
-        #mode, to_hub_cnt, from_hub_cnt, data_type = self.commands[command_name]
         mode, to_hub, from_hub = self.commands[command_name]
         if from_hub>0 and len(argv)>0:
             # convert to int (in case values are float)
@@ -50,22 +47,22 @@ class MicroPUP:
             if len(response)==1:
                 response = response[0]
             return response
+
+## Some functions to import in block code
 p=None
 
-def pup_init(port):
+def init(port):
     global p
     p=MicroPUP(eval('Port.'+port))
 
-def pup_add_command(command_name: str,
+def add_command(command_name: str,
         to_hub: int = 0,
         from_hub: int = 0,
-        # data_type: int = 0,
     ):
     global p
-    p.add_command(command_name, to_hub, from_hub)# , data_type)
+    p.add_command(command_name, to_hub, from_hub)
 
-
-def pup_call(*argv):
+def call(*argv):
     global p
     command_name = argv[0]
     response = p.call(command_name,*argv[1:])

@@ -14,6 +14,15 @@ TO_HUB = const(2)
 FROM_HUB = const(3)
 
 class MicroPUP:
+    """
+    Class to communicate an LMS-ESP32 in MicroBlocks. Use this class on the Pybricks side.
+    Connect an ESP32 board that runs MicroBlocks and the micropup library. Connect 
+    the lego port to anyu poprt available on a Pybcricks hub.
+    
+    :param port: The port to which the PUPRemoteSensor is connected.
+    :type port: Port (Example: Port.A)
+    """
+
     def __init__(self, port):
         self.port = port
         self.commands = {}
@@ -31,7 +40,14 @@ class MicroPUP:
         from_hub: int = 0,
         #data_type: int = 0,
     ):
-        
+        """
+        Registers a command defined in MicroBlocks.
+
+        :param to_hub: The number of arguments sent to MicroBlocks
+        :type to_hub: integer
+        :param from_hub: The number of values returned from the hub
+        :type from_hub: integer
+        """        
         self.commands[command_name] = [
                 self.nr_commands, to_hub, from_hub  #, data_type
             ]
@@ -39,7 +55,13 @@ class MicroPUP:
 
     def call(self, command_name: str, *argv):
         """
-        Call a remote function on the sensor side with the mode_name you defined on both sides.
+        Calls a remote MicroBlocks function defined on the MicroBlocks side.
+
+        :param command_name: The name of the command
+        :type command_name: string
+        :param Optionally, you can pass the <n_from_hub> number of parameters. 
+        
+        :return: It will return a single value, or a list, depending on the value of <n_to_hub>.
 
         """
         mode, to_hub, from_hub = self.commands[command_name]

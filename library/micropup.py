@@ -1,3 +1,10 @@
+__author__ = "Ste7an & Anton Vanhoucke"
+__copyright__ = "Copyright 2023,2024 AntonsMindstorms.com"
+__license__ = "GPL"
+__version__ = "1.1"
+__status__ = "Production"
+
+
 from pybricks.parameters import Port, Color
 from pybricks.iodevices import PUPDevice
 from micropython import const

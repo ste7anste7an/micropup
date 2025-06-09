@@ -27,126 +27,9 @@ whenStarted
 '[tft:clear]'
 init
 add_command 'imu' 0 3 'h'
-add_command 'tst' 1 1 'h'
 forever {
   process
 }
-}
-
-
-module 'File Primitives' Data
-author MicroBlocks
-version 1 2 
-tags data esp 
-description 'Primitives to access the built-in file system on ESP32 and ESP8266 boards.'
-
-  spec ' ' '[file:open]' 'open file _' 'str'
-  spec ' ' '[file:close]' 'close file _' 'str'
-  spec ' ' '[file:delete]' 'delete file _' 'str'
-  spec 'r' '[file:endOfFile]' 'end of file _' 'str'
-  spec 'r' '[file:readLine]' 'next line of file _' 'str'
-  spec 'r' '[file:readBytes]' 'next _ bytes of file _ : starting at _' 'num str num' 100 '' 0
-  spec ' ' '[file:appendLine]' 'append line _ to file _' 'str str'
-  spec ' ' '[file:appendBytes]' 'append bytes _ to file _' 'str str'
-  spec 'r' '[file:fileSize]' 'size of file _' 'str'
-  spec ' ' '[file:startList]' 'start file list : directory _' 'str'
-  spec 'r' '[file:nextInList]' 'next file in list'
-  spec 'r' '[file:systemInfo]' 'file system info'
-
-module 'LED Display' Output
-author MicroBlocks
-version 1 9 
-choices led_imageMenu heart 'small heart' yes no happy sad confused angry asleep surprised silly fabulous meh 't-shirt' 'roller skate' duck house tortoise butterfly 'stick figure' ghost sword giraffe skull umbrella snake rabbit cow 'quarter note' 'eight note' pitchfork target triangle 'left triangle' 'chess board' diamond 'small diamond' square 'small square' scissors 
-description 'Display primitives for the 5x5 LED display on the BBC micro:bit, Calliope mini and M5Atom Matrix. Boards with TFT displays (such as the Citilab ED1 or the M5Stack family) support these primitives with a simulated "fat pixel" display.'
-variables _stop_scrolling_text 
-
-  spec ' ' '[display:mbDisplay]' 'display _' 'microbitDisplay' 15237440
-  spec ' ' 'led_displayImage' 'display image _ : x _ y _' 'menu.led_imageMenu num num' 'happy' 1 1
-  spec ' ' '[display:mbDisplayOff]' 'clear display'
-  space
-  spec ' ' '[display:mbPlot]' 'plot x _ y _' 'num num' 3 3
-  spec ' ' '[display:mbUnplot]' 'unplot x _ y _' 'num num' 3 3
-  space
-  spec ' ' 'displayCharacter' 'display character _' 'str' 'A'
-  spec ' ' 'scroll_text' 'scroll text _ : pausing _ ms' 'str num' 'HELLO ROSA!' 100
-  spec ' ' 'stopScrollingText' 'stop scrolling'
-  space
-  spec 'r' '_led_image' 'led image _' 'microbitDisplay' 15237440
-  spec 'r' '_led_namedImage' '_led_namedImage _' 'menu.led_imageMenu' 'happy'
-  spec 'r' '_led_imageData' '_led_imageData'
-  spec ' ' 'set display color' 'set display color _' 'color'
-
-to '_led_image' twentyFiveBitInt {
-  comment 'An LED image is a 25-bit integer'
-  return twentyFiveBitInt
-}
-
-to '_led_imageData' {
-  return 'heart:4685802,small heart:145728,yes:2269696,no:18157905,happy:15237440,sad:18284864,confused:22348096,angry:23036241,asleep:459616,surprised:4526090,silly:25984017,fabulous:15008639,meh:2236443,t-shirt:15154043,roller skate:11534104,duck:489702,house:10976708,tortoise:359872,butterfly:29332475,stick figure:18158564,ghost:23068334,sword:4657284,giraffe:10946627,skull:15171246,umbrella:6460398,snake:469859,rabbit:16104613,cow:4685361,quarter note:7573636,eight note:7590276,pitchfork:4357813,target:4681156,triangle:1026176,left triangle:32805985,chess board:11184810,diamond:4539716,small diamond:141440,square:33080895,small square:469440,scissors:20287859,'
-}
-
-to '_led_namedImage' name {
-  local 'data' ('_led_imageData')
-  local 'i' ('[data:find]' name data)
-  if (i == -1) {
-    comment 'Name not found'
-    return 0
-  }
-  local 'start' (('[data:find]' ':' data i) + 1)
-  local 'end' (('[data:find]' ',' data i) - 1)
-  return ('[data:convertType]' ('[data:copyFromTo]' data start end) 'number')
-}
-
-to displayCharacter s {
-  s = ('[data:join]' '' s)
-  if ((size s) == 0) {
-    '[display:mbDisplayOff]'
-    return 0
-  }
-  '[display:mbDrawShape]' ('[display:mbShapeForLetter]' (at 1 s))
-}
-
-to led_displayImage imageName optionalX optionalY {
-  local 'image' imageName
-  if (isType image 'string') {
-    image = ('_led_namedImage' imageName)
-  }
-  '[display:mbDrawShape]' image (argOrDefault 2 1) (argOrDefault 3 1)
-}
-
-to scroll_text text optionalDelay {
-  text = ('[data:join]' '' text)
-  local 'delay' 100
-  if ((pushArgCount) > 1) {
-    delay = optionalDelay
-  }
-  _stop_scrolling_text = (booleanConstant false)
-  if ('Pico:ed' == (boardType)) {
-    for position (((size text) * 6) + 18) {
-      if _stop_scrolling_text {return 0}
-      '[display:mbDisplayOff]'
-      '[tft:text]' text (17 - position) 0 (colorSwatch 125 125 125 255) 1 true
-      waitMillis (delay / 2)
-    }
-  } else {
-    for position (((size text) * 6) + 6) {
-      if _stop_scrolling_text {return 0}
-      for i (size text) {
-        '[display:mbDrawShape]' ('[display:mbShapeForLetter]' ('[data:unicodeAt]' i text)) (((i * 6) + 2) - position) 1
-      }
-      waitMillis delay
-    }
-  }
-}
-
-to 'set display color' color {
-  callCustomCommand '[display:mbSetColor]' ('[data:makeList]' color)
-}
-
-to stopScrollingText {
-  _stop_scrolling_text = (booleanConstant true)
-  waitMillis 10
-  '[display:mbDisplayOff]'
 }
 
 
@@ -166,6 +49,7 @@ description 'Draw graphics and write text on boards with a TFT display, such as 
   space
   spec ' ' '[tft:text]' 'write _ on TFT at x _ y _ color _ : scale _ wrap _ : bg color _' 'str num num color num bool color' 'Hello World!' 5 5 nil 2 true
   spec ' ' 'tft_drawText' 'draw text _ on TFT at x _ y _ color _ : scale _ : bg color _' 'str num num color num color' 'Line 1
+
 Line 2' 50 20 nil 2
   space
   spec ' ' '[tft:setPixel]' 'set TFT pixel x _ y _ to _' 'num num color' 10 10
@@ -243,20 +127,9 @@ to tft_drawVector x y angle length color {
 }
 
 
-module 'Touch Screen Primitives' Input
-author MicroBlocks
-version 1 0 
-tags qvga touch tft 
-description 'Primitives to support the QVGA touch screen display on the (discontinued) IoT-Bus Io system.'
-
-  spec 'r' '[tft:tftTouched]' 'TFT touched'
-  spec 'r' '[tft:tftTouchX]' 'TFT touch X position'
-  spec 'r' '[tft:tftTouchY]' 'TFT touch Y position'
-  spec 'r' '[tft:tftTouchPressure]' 'TFT touch pressure'
-
 module micropup
 author Ste7an
-version 0 2 
+version 1 1 
 choices data_type b h i 
 description 'Library to facilitate communication with Pybricks hubs. See https://github.com/ste7anste7an/micropup'
 variables _pup_sensor_id _pup_commands _pup_nr_modes _pup_cur_mode _pup_last_nack _pup_connected _pup_senddata _pup_payloads 
@@ -264,7 +137,6 @@ variables _pup_sensor_id _pup_commands _pup_nr_modes _pup_cur_mode _pup_last_nac
   spec ' ' 'init' 'init : sensor_id _' 'auto' 62
   spec ' ' 'add_command' 'add_command _ to_hub _ from_hub _ type _' 'str auto auto str.data_type' '' '1' '1' 'b'
   spec ' ' 'process' 'process'
-  spec ' ' 'reset_nack' 'reset_nack'
   spec 'r' '_tohex' '_tohex _' 'auto' '10'
   spec 'r' '_bytestowords' '_bytestowords _' 'auto' '10'
   spec 'r' '_unsignedbytes' '_unsignedbytes _' 'auto' '10'
@@ -649,9 +521,5 @@ to process {
     callCustomCommand function_name payload
   }
   '_send_data' _pup_cur_mode
-}
-
-to reset_nack {
-  _pup_last_nack = (millisOp)
 }
 

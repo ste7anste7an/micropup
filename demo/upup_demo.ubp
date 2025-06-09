@@ -5,22 +5,22 @@ description ''
 variables counter 
 
   spec 'r' 'add' 'add _ _' 'auto auto' '10' '10'
-  spec 'r' 'val' 'val'
   spec ' ' 'show' 'show _' 'auto' '10'
+  spec 'r' 'counter' 'counter'
 
 to add a b {
   comment 'retuens sum of a and b'
   return (a + b)
 }
 
+to counter {
+  comment 'return the current counter'
+  return counter
+}
+
 to show num {
   comment 'shows value of cnt'
   sayIt 'showing' num
-}
-
-to val {
-  comment 'return the current counter'
-  return counter
 }
 
 script 765 50 {
@@ -32,7 +32,7 @@ whenStarted
 init
 add_command 'show' 0 1 'h'
 add_command 'add' 1 2 'i'
-add_command 'val' 1 0 'h'
+add_command 'counter' 1 0 'h'
 counter = 0
 forever {
   process
@@ -46,14 +46,14 @@ script 769 217 {
 to add {}
 }
 
-script 771 367 {
-to val {}
+script 773 371 {
+to counter {}
 }
 
 
 module micropup
 author Ste7an
-version 0 2 
+version 1 1 
 choices data_type b h i 
 description 'Library to facilitate communication with Pybricks hubs. See https://github.com/ste7anste7an/micropup'
 variables _pup_sensor_id _pup_commands _pup_nr_modes _pup_cur_mode _pup_last_nack _pup_connected _pup_senddata _pup_payloads 
@@ -61,7 +61,6 @@ variables _pup_sensor_id _pup_commands _pup_nr_modes _pup_cur_mode _pup_last_nac
   spec ' ' 'init' 'init : sensor_id _' 'auto' 62
   spec ' ' 'add_command' 'add_command _ to_hub _ from_hub _ type _' 'str auto auto str.data_type' '' '1' '1' 'b'
   spec ' ' 'process' 'process'
-  spec ' ' 'reset_nack' 'reset_nack'
   spec 'r' '_tohex' '_tohex _' 'auto' '10'
   spec 'r' '_bytestowords' '_bytestowords _' 'auto' '10'
   spec 'r' '_unsignedbytes' '_unsignedbytes _' 'auto' '10'
@@ -446,9 +445,5 @@ to process {
     callCustomCommand function_name payload
   }
   '_send_data' _pup_cur_mode
-}
-
-to reset_nack {
-  _pup_last_nack = (millisOp)
 }
 

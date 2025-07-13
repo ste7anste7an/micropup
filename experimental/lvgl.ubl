@@ -1,0 +1,48 @@
+module LVGL
+module LVGL Output
+author Ste7an
+version 1 1 
+description 'LVGL support for MicroBlocks'
+
+choices obj_types button arc slider led switch
+choices style_types min max elements 
+  spec ' ' '[tft:LVGLon]' 'enable_lvgl _' 'bool' true
+  spec ' ' '[tft:LVGLaddbtn]' 'btn _ text _ : scale _ event _' 'str str num bool' 'btn' 'label' 1 true
+  spec ' ' '[tft:LVGLaddlabel]' 'label _ text _ : scale _' 'str str num ' 'label' 'text' 1
+  spec ' ' '[tft:LVGLaddslider]' 'slider _ : event _' 'str bool' 'slider' false
+  spec ' ' '[tft:LVGLaddobject]' 'add _ as _'  'str.obj_types str' 'button' ''
+  spec ' ' '[tft:LVGLaddstyle]' 'set _ of _ to _ '  'str.style_types str auto' 'min' '' ''
+
+  spec ' ' '[tft:LVGLaddarc]' 'arc _ : event _' 'str bool' 'arc' false
+  spec ' ' '[tft:LVGLsetpos]' 'set_pos _ x _ y _' 'str num num' '' 100 100
+  spec ' ' '[tft:LVGLsetsize]' 'set_size _ width _ height _' 'str num num' '' 100 10
+  spec ' ' '[tft:LVGLsetval]' 'set_val _ value _' 'str num' '' 10
+  spec 'r' '[tft:LVGLgetval]' 'get_val _' 'str' ''
+  spec ' ' '[tft:LVGLsettext]' 'set_text _ text _ : scale _' 'str str num' '' 'text' 1
+  spec ' ' '[tft:LVGLsetcolor]' 'set_color _ color _ : extra _' 'str color color' ''
+  spec 'r' 'makeColor' 'color r _ g _ b _ (0-255)' 'num num num' 0 100 100
+  space
+  spec 'r' 'event_available' 'event available' '' 
+  spec 'r' '[tft:LVGLgetevent]' 'get_event'
+  space
+  spec 'r' '[tft:LVGLgetallobjs]' 'get_all_objects'
+  spec ' ' '[tft:LVGLdelobj]' 'del_obj _' 'str' ''
+  spec ' ' 'delete_all_objects' 'delete_all_objects'
+
+to delete_all_objects {
+  local 'all_objects' ('[tft:LVGLgetallobjs]')
+  for i (size all_objects) {
+    '[tft:LVGLdelobj]' (at i all_objects)
+  }
+}
+
+to makeColor r g b {
+  r = (maximum 0 (minimum r 255))
+  g = (maximum 0 (minimum g 255))
+  b = (maximum 0 (minimum b 255))
+  return ((r << 16) | ((g << 8) | b))
+}
+
+to event_available {
+  return false
+}

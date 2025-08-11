@@ -60,10 +60,12 @@ class MicroPUP:
 
         :param command_name: The (local) name of the command
         :type command_name: string
-        :param Optionally, you can pass the <n_from_hub> number of parameters. 
+        :param \*argv: Optionally, you can pass the to_hub parameters. 
         
+        :example:
+        
+            call('echo', 1, 2, 3)
         :return: It will return a single value, or a list, depending on the value of <n_to_hub>.
-
         """
         assert (
             not run_task()
@@ -86,10 +88,9 @@ class MicroPUP:
 
         :param command_name: The name of the command
         :type command_name: string
-        :param Optionally, you can pass the <n_from_hub> number of parameters. 
+        :param \*argv: Optionally, you can pass the from_hub parameters. 
         
         :return: It will return a single value, or a list, depending on the value of <n_to_hub>.
-
         """
         if not self._multitask_loop_running:
             raise AssertionError("Start 'process_calls' as a seperate task (coroutine) before using 'call_multitask()'")

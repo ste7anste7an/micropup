@@ -29,14 +29,17 @@ class MicroPUP:
     :type port: Port (Example: Port.A)
     """
     def __init__(self, port):
-        self.port = port
+        if type(port) is str:
+            self.port = eval("Port." + port)
+        else:
+            self.port = port
         self.commands = {}
         self.nr_commands = 0
         try:
-            self.pup_device = PUPDevice(port)
+            self.pup_device = PUPDevice(self.port)
         except OSError:
             self.pup_device = None
-            print("PUPDevice not ready on port", port)
+            print("PUPDevice not ready on port", self.port)
             raise
 
         self._queue = []

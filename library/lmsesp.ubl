@@ -9,3 +9,9 @@ This is incorporated in a MicroPup firmware version for LMS-ESP32'
   spec 'r' '[serial:espversion]' 'get esp version'
   spec ' ' '[io:outputstring]' 'IO outputstring _' 'str' 'debug'
   spec 'r' '[tft:tftTouchGesture]' 'gesture'
+  spec ' ' 'set pins rx' 'set pins rx _ tx _ baud _' 'auto auto auto' 8 7 115200
+
+to 'set pins rx' rx tx baud {
+  callCustomCommand '[serial:setPins]' ('[data:makeList]' rx tx baud)
+}
+

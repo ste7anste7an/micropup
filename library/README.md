@@ -5,6 +5,10 @@ Load `micropup.ubl` as a library in MicroBlocks. You can drag and drop this libr
 
 The library `lmsesp.ubl` contains some LMS-ESP32 specific defined functions. 
 
+## micropup_fast.ubl
+
+This is a new library that hands over part of the lpup handshake to the microblocks firmware. A special firmware is needed. This feature will be present in the latest firmware that can be downloaded from https://firmware.antonsmindstorms.com.
+
 ## Pybricks
 ### micropup.py
 Download `micropup.py` to your pybricks environment by importing this file in Pybricks.
